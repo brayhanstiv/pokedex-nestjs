@@ -1,26 +1,62 @@
-import { Injectable } from '@nestjs/common';
+// Packages
+import { InjectModel } from '@nestjs/mongoose';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { Model } from 'mongoose';
+
+// Dto's
 import { CreatePokemonDto } from './dto/create-pokemon.dto';
 import { UpdatePokemonDto } from './dto/update-pokemon.dto';
 
+// Schemas
+import { Pokemon } from './schemas/pokemon.schema';
+
 @Injectable()
 export class PokemonService {
-  create(createPokemonDto: CreatePokemonDto) {
-    return 'This action adds a new pokemon';
+  constructor(
+    @InjectModel(Pokemon.name)
+    private readonly pokemonModel: Model<Pokemon>,
+  ) {}
+
+  async create(createPokemonDto: CreatePokemonDto) {
+    const data = {
+      ...createPokemonDto,
+      name: createPokemonDto.name.toLowerCase(),
+    };
+
+    return await this.pokemonModel.create(data);
   }
 
-  findAll() {
-    return `This action returns all pokemon`;
+  async findAll() {
+    return this.pokemonModel.find();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} pokemon`;
+  async findOne(id: string) {
+    const pokemon: Pokemon | null = await this.pokemonModel.findById(id);
+    if (!pokemon) {
+      throw new NotFoundException('Pokemon not found');
+    }
+    return pokemon;
   }
 
-  update(id: number, updatePokemonDto: UpdatePokemonDto) {
-    return `This action updates a #${id} pokemon`;
+  async update(id: string, updatePokemonDto: UpdatePokemonDto) {
+    const pokemon: Pokemon | null = await this.pokemonModel.findByIdAndUpdate(
+      id,
+      updatePokemonDto,
+      { new: true },
+    );
+    if (!pokemon) {
+      throw new NotFoundException('Pokemon not found');
+    }
+    return pokemon;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} pokemon`;
+  async remove(id: string) {
+    const pokemon: Pokemon | null =
+      await this.pokemonModel.findByIdAndDelete(id);
+
+    if (!pokemon) {
+      throw new NotFoundException('Pokemon not found');
+    }
+    return pokemon;
   }
 }
